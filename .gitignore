@@ -1,0 +1,9 @@
+/*
+/*/
+
+!openProject.bat
+!.gitignore
+!/Assets/
+!/ProjectSettings/
+!README.md
+!LICENSE.md
