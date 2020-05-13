@@ -1,2 +1,2 @@
-start Assets/Scenes/SampleScene.unity
+start Assets/src/Scenes/SampleScene.unity
 exit

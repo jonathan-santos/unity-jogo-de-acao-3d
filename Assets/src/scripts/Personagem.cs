@@ -4,16 +4,21 @@ using UnityEngine.Rendering;
 public class Personagem : MonoBehaviour
 {
     [Header("Movimentação")]
-    public float velocidade = 4f;
+    public float velocidadeMovimentacao = 5f;
+    public float velocidadeGirarCorpo = 0.2f;
+    public Transform corpo;
+    Vector3 direcaoMovimento;
 
     [Header("Pulo")]
-    public float forcaPulo = 30f;
+    public float alturaPulo = 30f;
+    public float forcaPulo = 25f;
     public GameObject checarChao;
     public LayerMask layerChao;
+    bool estaTocandoNoChao;
     Rigidbody rb;
 
     [Header("Câmera")]
-    public Transform AlvoCamera;
+    public Transform alvoCamera;
     public float sensibilidade = 2.5f;
     public int rotacaoMaxima = 20;
     float mouseX;
@@ -22,37 +27,59 @@ public class Personagem : MonoBehaviour
     Transform obstrucao;
     MeshRenderer obstrucaoRenderer;
 
+    Animator anim;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         cam = GetComponentInChildren<Camera>();
+        anim = GetComponent<Animator>();
+
+        obstrucao = alvoCamera;
+
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
-        obstrucao = AlvoCamera;
     }
 
     void Update()
     {
+        estaTocandoNoChao = Physics.CheckSphere(checarChao.transform.position, 0.5f, layerChao);
+
         Mover();
         Pular();
+        Atacar();
+    }
+
+    void FixedUpdate()
+    {
         MoverCamera();
-        VerPersonagemObstruido();
+        GirarCorpoPersonagem();
     }
 
     void Mover()
     {
+        var velocidade = velocidadeMovimentacao;
+
+        if (Input.GetButton("Fire3"))
+            velocidade *= 1.25f;                 
+
+        if (!estaTocandoNoChao)
+            velocidade *= 0.5f;
+
         var moverPraFrente = Input.GetAxis("Vertical");
         var moverPraDireita = Input.GetAxis("Horizontal");
-        var movimentacao = new Vector3(moverPraDireita, 0, moverPraFrente).normalized * velocidade * Time.deltaTime;
-        this.transform.Translate(movimentacao, Space.Self);
+        direcaoMovimento = new Vector3(moverPraDireita, 0, moverPraFrente).normalized;
+        transform.Translate(direcaoMovimento * velocidade * Time.deltaTime, alvoCamera);
     }
 
     void Pular()
     {
-        var estaNoChao = Physics.CheckSphere(checarChao.transform.position, 0.5f, layerChao);
-
-        if (estaNoChao && Input.GetButton("Jump"))
-            rb.AddForce(Vector3.up * forcaPulo);
+        if (estaTocandoNoChao && Input.GetButton("Jump"))
+        {
+            var quantoIrPraCima = Vector3.up * alturaPulo;
+            var direcaoPulo = alvoCamera.TransformDirection(direcaoMovimento) * forcaPulo;
+            rb.AddForce(quantoIrPraCima + direcaoPulo, ForceMode.Force);
+        }
     }
 
     void MoverCamera()
@@ -61,20 +88,28 @@ public class Personagem : MonoBehaviour
         mouseY -= Input.GetAxis("Mouse Y") * sensibilidade;
         mouseY = Mathf.Clamp(mouseY, -rotacaoMaxima, rotacaoMaxima);
 
+        alvoCamera.transform.rotation = Quaternion.Euler(mouseY, mouseX, 0);
         cam.transform.LookAt(this.transform);
+    }
 
-        AlvoCamera.transform.rotation = Quaternion.Euler(mouseY, mouseX, 0);
-        this.transform.rotation = Quaternion.Euler(0, mouseX, 0);
+    void GirarCorpoPersonagem()
+    {
+        if (direcaoMovimento != Vector3.zero)
+        {
+            corpo.eulerAngles = new Vector3(0, cam.transform.eulerAngles.y, 0);
+            if ((Input.GetAxis("Mouse X") == 0))
+                corpo.rotation = Quaternion.LookRotation(corpo.TransformDirection(direcaoMovimento));
+        }
     }
 
     void VerPersonagemObstruido()
     {
         RaycastHit hit;
 
-        if (Physics.Raycast(cam.transform.position, AlvoCamera.position - cam.transform.position, out hit, 4.5f))
+        if (Physics.Raycast(cam.transform.position, alvoCamera.position - cam.transform.position, out hit, 4.5f))
         {
             var distanciaEntreObstrucaoECamera = Vector3.Distance(obstrucao.position, cam.transform.position);
-            var distanciaEntreCameraEAlvo = Vector3.Distance(cam.transform.position, AlvoCamera.position);
+            var distanciaEntreCameraEAlvo = Vector3.Distance(cam.transform.position, alvoCamera.position);
 
             if (hit.collider.gameObject.tag != this.tag)
             {
@@ -94,5 +129,11 @@ public class Personagem : MonoBehaviour
                     cam.transform.Translate(Vector3.back * 1f * Time.deltaTime);
             }
         }
+    }
+
+    void Atacar()
+    {
+        if (Input.GetButtonDown("Fire1"))
+            anim.SetTrigger("atacar");
     }
 }
