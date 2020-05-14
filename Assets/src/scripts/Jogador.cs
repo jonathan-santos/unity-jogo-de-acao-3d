@@ -1,11 +1,10 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
 
-public class Personagem : MonoBehaviour
+public class Jogador : MonoBehaviour
 {
     [Header("Movimentação")]
-    public float velocidadeMovimentacao = 5f;
-    public float velocidadeGirarCorpo = 0.2f;
+    public float velocidade = 5f;
     public Transform corpo;
     Vector3 direcaoMovimento;
 
@@ -14,8 +13,7 @@ public class Personagem : MonoBehaviour
     public float forcaPulo = 25f;
     public GameObject checarChao;
     public LayerMask layerChao;
-    bool estaTocandoNoChao;
-    Rigidbody rb;
+    public Rigidbody rb;
 
     [Header("Câmera")]
     public Transform alvoCamera;
@@ -43,8 +41,6 @@ public class Personagem : MonoBehaviour
 
     void Update()
     {
-        estaTocandoNoChao = Physics.CheckSphere(checarChao.transform.position, 0.5f, layerChao);
-
         Mover();
         Pular();
         Atacar();
@@ -58,22 +54,20 @@ public class Personagem : MonoBehaviour
 
     void Mover()
     {
-        var velocidade = velocidadeMovimentacao;
+        var vel = velocidade;
 
         if (Input.GetButton("Fire3"))
-            velocidade *= 1.25f;                 
-
-        if (!estaTocandoNoChao)
-            velocidade *= 0.5f;
+            vel *= 1.25f;
 
         var moverPraFrente = Input.GetAxis("Vertical");
         var moverPraDireita = Input.GetAxis("Horizontal");
         direcaoMovimento = new Vector3(moverPraDireita, 0, moverPraFrente).normalized;
-        transform.Translate(direcaoMovimento * velocidade * Time.deltaTime, alvoCamera);
+        transform.Translate(direcaoMovimento * vel * Time.deltaTime, alvoCamera);
     }
 
     void Pular()
     {
+        var estaTocandoNoChao = Physics.CheckSphere(checarChao.transform.position, 0.5f, layerChao);
         if (estaTocandoNoChao && Input.GetButton("Jump"))
         {
             var quantoIrPraCima = Vector3.up * alturaPulo;
