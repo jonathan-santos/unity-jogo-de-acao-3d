@@ -22,6 +22,9 @@ public class Jogador : MonoBehaviour
     float mouseX;
     float mouseY;
     Camera cam;
+
+
+    //obstrução
     Transform obstrucao;
     MeshRenderer obstrucaoRenderer;
 
@@ -50,6 +53,7 @@ public class Jogador : MonoBehaviour
     {
         MoverCamera();
         GirarCorpoPersonagem();
+        DesobstruirVisao();
     }
 
     void Mover()
@@ -91,36 +95,41 @@ public class Jogador : MonoBehaviour
         if (direcaoMovimento != Vector3.zero)
         {
             corpo.eulerAngles = new Vector3(0, cam.transform.eulerAngles.y, 0);
-            if ((Input.GetAxis("Mouse X") == 0))
-                corpo.rotation = Quaternion.LookRotation(corpo.TransformDirection(direcaoMovimento));
+            corpo.rotation = Quaternion.LookRotation(corpo.TransformDirection(direcaoMovimento));
         }
     }
 
-    void VerPersonagemObstruido()
+    void DesobstruirVisao()
     {
-        RaycastHit hit;
+        var direcaoCamera = alvoCamera.position - cam.transform.position;
 
-        if (Physics.Raycast(cam.transform.position, alvoCamera.position - cam.transform.position, out hit, 4.5f))
+        if (Physics.Raycast(cam.transform.position, direcaoCamera, out RaycastHit hit, 4.5f))
         {
-            var distanciaEntreObstrucaoECamera = Vector3.Distance(obstrucao.position, cam.transform.position);
             var distanciaEntreCameraEAlvo = Vector3.Distance(cam.transform.position, alvoCamera.position);
 
             if (hit.collider.gameObject.tag != this.tag)
             {
                 obstrucao = hit.transform;
+
                 obstrucaoRenderer = obstrucao.gameObject.GetComponent<MeshRenderer>();
-                obstrucaoRenderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
+                if (obstrucaoRenderer != null)
+                    obstrucaoRenderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
+
+                var distanciaEntreObstrucaoECamera = Vector3.Distance(obstrucao.position, cam.transform.position);
 
                 if (distanciaEntreObstrucaoECamera >= 3f && distanciaEntreCameraEAlvo >= 1.5f)
-                    cam.transform.Translate(Vector3.forward * 1f * Time.deltaTime);
+                    cam.transform.Translate(Vector3.forward * 2f * Time.deltaTime);
             }
             else
             {
+                if(obstrucao != null)
+                    obstrucaoRenderer = obstrucao.gameObject.GetComponent<MeshRenderer>();
+
                 if (obstrucaoRenderer != null)
                     obstrucaoRenderer.shadowCastingMode = ShadowCastingMode.On;
 
                 if (distanciaEntreCameraEAlvo < 4.5f)
-                    cam.transform.Translate(Vector3.back * 1f * Time.deltaTime);
+                    cam.transform.Translate(Vector3.back * 2f * Time.deltaTime);
             }
         }
     }

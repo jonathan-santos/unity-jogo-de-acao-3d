@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.AI;
 
 public class Dano : MonoBehaviour
 {
@@ -9,6 +10,7 @@ public class Dano : MonoBehaviour
 
     Vida vidaDeObjetoColidido;
     Rigidbody rbDeObjetoColidido;
+    NavMeshAgent navMeshDeObjetoColidido;
 
     void OnTriggerEnter(Collider colisao)
     {
@@ -21,17 +23,41 @@ public class Dano : MonoBehaviour
         {
             vidaDeObjetoColidido = objetoColidido.GetComponent<Vida>();
             rbDeObjetoColidido = objetoColidido.GetComponent<Rigidbody>();
+            navMeshDeObjetoColidido = objetoColidido.GetComponent<NavMeshAgent>();
 
-            if(vidaDeObjetoColidido != null)
+            if (vidaDeObjetoColidido != null)
                 vidaDeObjetoColidido.MudarVida(-dano);
 
-            if(rbDeObjetoColidido != null)
-                rbDeObjetoColidido.AddForce(transform.forward * afastar, ForceMode.Impulse);
+            if (navMeshDeObjetoColidido != null && navMeshDeObjetoColidido.enabled)
+            {
+                navMeshDeObjetoColidido.enabled = false;
+                rbDeObjetoColidido.isKinematic = false;
+                Invoke("ReativarNavMeshDeObjetoColidido", 0.25f);
+            }
+
+            if (rbDeObjetoColidido != null)
+            {
+                var direcaoParaAfastar = objetoColidido.transform.position - transform.position;
+                rbDeObjetoColidido.AddForce(direcaoParaAfastar * afastar, ForceMode.Impulse);
+            }
         }
 
         if (autoDestruirEmColisao)
             Destroy(gameObject);
+    }
 
-        
+    void ReativarNavMeshDeObjetoColidido()
+    {
+        if(navMeshDeObjetoColidido != null)
+        {
+            navMeshDeObjetoColidido.enabled = true;
+            rbDeObjetoColidido.isKinematic = true;
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (navMeshDeObjetoColidido != null && !navMeshDeObjetoColidido.enabled)
+            ReativarNavMeshDeObjetoColidido();
     }
 }
